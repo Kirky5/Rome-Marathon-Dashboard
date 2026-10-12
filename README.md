@@ -6,7 +6,7 @@ A training dashboard for my **first marathon**: **Run Rome The Marathon**, **Sun
 
 | | |
 |---|---|
-| **Race** | Run Rome The Marathon, 42.195 km. Start and finish at Via dei Fori Imperiali |
+| **Race** | Run Rome The Marathon, 42.195 km. Start at the Colosseo, finish at Circo Massimo |
 | **Primary goal** | Sub-3:45 (5:20/km) |
 | **Stretch goal** | Sub-3:30 (4:59/km) |
 | **Block** | 22 weeks, 12 Oct 2026 → 14 Mar 2027 |
@@ -16,27 +16,28 @@ A training dashboard for my **first marathon**: **Run Rome The Marathon**, **Sun
 
 - **Week:** 1 of 22 (12–18 Oct 2026)
 - **Phase:** 1, Rebuild
-- **Overall readiness:** awaiting first Garmin upload (baseline sets after Week 1)
+- **Overall readiness:** **30%** vs sub-3:45 (Week 0 baseline, 14 Sep – 11 Oct)
 - **Weeks to race day:** 22
 
 ### Readiness breakdown (vs sub-3:45)
-| Factor | Weight | Score |
-|---|---|---|
-| Long run (vs 32 km) | 30% | — |
-| Weekly volume (vs 55 km peak) | 20% | — |
-| Marathon-pace work | 15% | — |
-| Aerobic engine (predicted finish) | 15% | — |
-| Fuelling practice | 10% | — |
-| Consistency | 10% | — |
+| Factor | Weight | Score | Baseline |
+|---|---|---|---|
+| Long run (vs 32 km) | 30% | 31% | Longest in last 4 wks: 10.0 km |
+| Weekly volume (vs 55 km peak) | 20% | 31% | 4-wk avg 17.1 km (last week 28.2 km) |
+| Marathon-pace work | 15% | 0% | Not started yet |
+| Aerobic engine | 15% | 78% | 10 km in 48:01 (10 Oct) → VDOT 42.0, 3:40 equivalent |
+| Fuelling practice | 10% | 0% | Starts W7/W10 |
+| Consistency | 10% | — | Scores from Week 1 |
 
 ### 🏆 Latest achievements
-- Geordieman 70.3 completed in August 2026
-- Marathon block planned: 22 weeks, 6 phases, 4 checkpoint efforts
+- Geordieman 70.3 completed (23 Aug 2026)
+- 10 km in 48:01 (4:48/km) on 10 Oct: speed is already at sub-3:45 level
+- Back up to 28 km of running in the week before the block started
 
 ### 🎯 This week's priorities
-1. Re-establish run consistency: about 30 km, every run easy (HR <130) except strides
-2. Long run of 14 km, conversational effort
-3. 2 × 60 min Zwift Z2 plus one easy technique swim
+1. About 30 km over 3–4 runs, with a 14 km long run, all genuinely easy (**HR <130**)
+2. Get Zwift going again: 2 × 60 min Z2, plus one easy technique swim
+3. Cut HIIT back to 1–2 sessions so the runs come first
 
 ## 🗓️ Phases
 
@@ -56,6 +57,7 @@ A training dashboard for my **first marathon**: **Run Rome The Marathon**, **Sun
 - **Pace Zones**: VDOT pace calculator (Easy / Steady / MP / Threshold / Interval / Reps)
 - **Predictor & Readiness**: realistic first-marathon finish predictor, on-track checkpoints, Garmin prediction trend
 - **Training Log**: plan vs actual run km, long runs, Zwift and swim hours, readiness trend, sleep
+- **🗺️ Course**: interactive course map. Scrub or play through the race to see clock time at goal pace, next water and gel, landmark facts and race cues
 - **Race Day**: course notes, 5 km pacing splits, gel plan mapped to Rome aid stations, carb-load calculator, race-week timeline
 
 ## 🔄 Weekly update

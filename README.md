@@ -2,7 +2,7 @@
 
 A training dashboard for my **first marathon**: **Run Rome The Marathon**, **Sunday 14 March 2027**.
 
-👉 **[View the live dashboard](https://kirky5.github.io/rome-marathon-dashboard/)**
+👉 **[View the live dashboard](https://kirky5.github.io/Rome-Marathon-Dashboard/)**
 
 | | |
 |---|---|

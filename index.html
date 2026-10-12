@@ -1,0 +1,870 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Rome Marathon Dashboard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&family=Outfit:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+  :root {
+    --bg: #0c0a09;
+    --card: rgba(255,255,255,0.028);
+    --card-hover: rgba(255,255,255,0.045);
+    --border: rgba(255,255,255,0.07);
+    --text: #f3efe9;
+    --text-2: #a39b90;
+    --text-3: #6b645b;
+    --terra: #e2673a;
+    --gold: #e8b14a;
+    --mp: #f08a5d;
+    --zwift: #3a8ff0;
+    --swim: #3af0c7;
+    --good: #00e676;
+    --warn: #f0b83a;
+    --danger: #ff4d5e;
+    --sleep: #8f7cf0;
+    --str: #c58cf0;
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { background:var(--bg); color:var(--text); font-family:'Outfit',sans-serif; min-height:100vh; overflow-x:hidden; }
+  body::before { content:''; position:fixed; inset:0; z-index:-1; pointer-events:none;
+    background: radial-gradient(ellipse at 15% 10%, rgba(226,103,58,0.07) 0%, transparent 45%),
+                radial-gradient(ellipse at 85% 85%, rgba(232,177,74,0.05) 0%, transparent 45%); }
+  .container { max-width:1120px; margin:0 auto; padding:32px 20px 80px; }
+
+  .header { margin-bottom:28px; }
+  .header-label { font-family:'JetBrains Mono',monospace; font-size:11px; letter-spacing:4px; text-transform:uppercase; color:var(--text-3); margin-bottom:8px; }
+  .header h1 { font-family:'Cinzel',serif; font-size:clamp(28px,5.5vw,46px); font-weight:700; letter-spacing:1px; line-height:1.1;
+    background:linear-gradient(135deg,#fff 0%,var(--gold) 120%); -webkit-background-clip:text; background-clip:text; -webkit-text-fill-color:transparent; }
+  .header-sub { font-size:14px; color:var(--text-2); margin-top:10px; line-height:1.6; }
+  .header-sub b { color:var(--gold); font-weight:600; }
+
+  .tabs { display:flex; gap:3px; background:var(--card); border:1px solid var(--border); border-radius:14px; padding:5px; margin-bottom:28px; overflow-x:auto; -webkit-overflow-scrolling:touch; }
+  .tab-btn { flex:1; padding:11px 10px; border:none; border-radius:10px; cursor:pointer; font-family:'Outfit',sans-serif; font-size:13px; font-weight:600; background:transparent; color:var(--text-3); white-space:nowrap; transition:all .2s; }
+  .tab-btn.active { background:rgba(226,103,58,0.16); color:var(--terra); }
+  .tab-btn:hover:not(.active) { color:var(--text-2); }
+  .tab-content { display:none; animation:fade .3s ease; }
+  .tab-content.active { display:block; }
+  @keyframes fade { from{opacity:0;transform:translateY(6px)} to{opacity:1;transform:none} }
+
+  .section-title { font-size:18px; font-weight:700; margin:34px 0 14px; letter-spacing:-0.3px; }
+  .section-sub { font-size:14px; color:var(--text-2); margin:-6px 0 16px; line-height:1.6; }
+  .card { background:var(--card); border:1px solid var(--border); border-radius:16px; padding:22px; }
+  .grid { display:grid; gap:14px; }
+  .g2 { grid-template-columns:repeat(auto-fit,minmax(300px,1fr)); }
+  .g3 { grid-template-columns:repeat(auto-fit,minmax(240px,1fr)); }
+  .g4 { grid-template-columns:repeat(auto-fit,minmax(190px,1fr)); }
+  .stat-label { font-size:11px; text-transform:uppercase; letter-spacing:1.8px; color:var(--text-3); font-family:'JetBrains Mono',monospace; margin-bottom:10px; }
+  .stat-value { font-size:30px; font-weight:700; font-family:'JetBrains Mono',monospace; line-height:1.1; letter-spacing:-1px; }
+  .stat-value small { font-size:15px; color:var(--text-3); letter-spacing:0; }
+  .stat-sub { font-size:13px; color:var(--text-2); margin-top:6px; line-height:1.5; }
+  .note { font-size:12px; color:var(--text-3); margin-top:12px; line-height:1.55; }
+  .badge { display:inline-block; padding:4px 12px; border-radius:20px; font-size:11px; font-weight:700; letter-spacing:1px; text-transform:uppercase; }
+  .mono { font-family:'JetBrains Mono',monospace; }
+  p.body { font-size:14px; color:var(--text-2); line-height:1.65; }
+
+  /* Hero */
+  .hero { background:linear-gradient(135deg,rgba(226,103,58,0.10),rgba(232,177,74,0.05) 55%,transparent);
+    border:1px solid rgba(232,177,74,0.16); border-radius:24px; padding:32px; margin-bottom:24px; position:relative; overflow:hidden; }
+  .hero::after { content:'XLII'; position:absolute; right:-10px; bottom:-40px; font-family:'Cinzel',serif; font-size:180px; font-weight:700; color:rgba(232,177,74,0.05); pointer-events:none; line-height:1; }
+  .hero h2 { font-family:'Cinzel',serif; font-size:clamp(24px,4vw,34px); letter-spacing:1px; margin:10px 0 4px; }
+  .hero .meta { font-size:14px; color:var(--text-2); line-height:1.75; }
+  .hero .meta strong { color:var(--text); }
+  .countdown { display:grid; grid-template-columns:repeat(4,1fr); gap:10px; margin-top:22px; position:relative; z-index:1; }
+  .cd { text-align:center; background:rgba(0,0,0,0.32); border:1px solid var(--border); border-radius:14px; padding:16px 6px; }
+  .cd-n { font-family:'JetBrains Mono',monospace; font-size:36px; font-weight:700; color:var(--gold); line-height:1; }
+  .cd-l { font-size:10px; text-transform:uppercase; letter-spacing:2px; color:var(--text-3); margin-top:6px; }
+
+  /* Goals */
+  .goal { border-radius:16px; padding:22px; border:1px solid var(--border); background:var(--card); }
+  .goal .t { font-family:'JetBrains Mono',monospace; font-size:34px; font-weight:700; letter-spacing:-1px; }
+  .goal-row { display:flex; justify-content:space-between; font-size:13px; color:var(--text-2); padding:6px 0; border-bottom:1px solid rgba(255,255,255,0.04); }
+  .goal-row:last-child { border-bottom:none; }
+  .goal-row span:last-child { font-family:'JetBrains Mono',monospace; color:var(--text); }
+
+  /* Readiness */
+  .ring-wrap { display:flex; align-items:center; gap:24px; flex-wrap:wrap; }
+  .ring { width:140px; height:140px; position:relative; flex-shrink:0; }
+  .ring svg { transform:rotate(-90deg); }
+  .ring-c { position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; }
+  .ring-c .v { font-family:'JetBrains Mono',monospace; font-size:32px; font-weight:700; }
+  .ring-c .l { font-size:10px; color:var(--text-3); letter-spacing:1.5px; text-transform:uppercase; }
+  .factor { margin-bottom:14px; }
+  .factor-h { display:flex; justify-content:space-between; font-size:13px; margin-bottom:5px; gap:10px; }
+  .factor-h span:first-child { color:var(--text-2); }
+  .factor-h span:last-child { font-family:'JetBrains Mono',monospace; font-weight:700; white-space:nowrap; }
+  .bar { height:8px; background:rgba(255,255,255,0.05); border-radius:4px; overflow:hidden; }
+  .bar > div { height:100%; border-radius:4px; transition:width .8s ease; }
+  .factor-d { font-size:12px; color:var(--text-3); margin-top:4px; }
+
+  /* Week card */
+  .this-week { border-left:4px solid var(--terra); }
+  .day-grid { display:grid; grid-template-columns:repeat(7,1fr); gap:6px; margin-top:16px; }
+  .day { background:rgba(0,0,0,0.25); border:1px solid var(--border); border-radius:10px; padding:10px 8px; min-height:92px; }
+  .day .dn { font-family:'JetBrains Mono',monospace; font-size:10px; letter-spacing:1.5px; color:var(--text-3); margin-bottom:6px; }
+  .day .ds { font-size:12px; line-height:1.4; color:var(--text-2); }
+  .day .ds b { color:var(--text); font-weight:600; }
+  .dot { display:inline-block; width:7px; height:7px; border-radius:50%; margin-right:5px; vertical-align:middle; }
+  @media(max-width:760px){ .day-grid{grid-template-columns:repeat(2,1fr)} }
+
+  /* Phases + plan */
+  .phase-strip { display:flex; height:46px; border-radius:12px; overflow:hidden; border:1px solid var(--border); margin-bottom:8px; }
+  .phase-strip div { display:flex; align-items:center; justify-content:center; font-size:11px; font-weight:600; color:#0c0a09; padding:0 4px; text-align:center; line-height:1.15; cursor:default; }
+  .phase-legend { display:flex; justify-content:space-between; font-family:'JetBrains Mono',monospace; font-size:10px; color:var(--text-3); }
+  .phase-card { background:var(--card); border:1px solid var(--border); border-radius:16px; padding:20px 22px; position:relative; overflow:hidden; }
+  .phase-card::before { content:''; position:absolute; left:0; top:0; bottom:0; width:4px; background:var(--pc); }
+  .phase-card h4 { font-size:15px; font-weight:700; margin-bottom:3px; }
+  .phase-card .pd { font-family:'JetBrains Mono',monospace; font-size:11px; color:var(--text-3); margin-bottom:10px; }
+  .phase-card p { font-size:13px; color:var(--text-2); line-height:1.6; }
+  .phase-card ul { list-style:none; margin-top:8px; }
+  .phase-card li { font-size:13px; color:var(--text-2); padding:3px 0 3px 16px; position:relative; line-height:1.5; }
+  .phase-card li::before { content:'›'; position:absolute; left:2px; color:var(--pc); font-weight:700; }
+
+  .week-list { display:flex; flex-direction:column; gap:8px; }
+  .wk { background:var(--card); border:1px solid var(--border); border-radius:14px; overflow:hidden; }
+  .wk.current { border-color:rgba(226,103,58,0.55); box-shadow:0 0 0 1px rgba(226,103,58,0.25); }
+  .wk.past { opacity:.62; }
+  .wk-h { display:grid; grid-template-columns:62px 1fr auto; gap:12px; align-items:center; padding:14px 16px; cursor:pointer; user-select:none; }
+  .wk-n { font-family:'JetBrains Mono',monospace; font-size:13px; font-weight:700; }
+  .wk-n small { display:block; font-size:10px; color:var(--text-3); font-weight:500; }
+  .wk-t { font-size:14px; font-weight:600; }
+  .wk-t small { display:block; font-size:12px; color:var(--text-2); font-weight:400; margin-top:2px; }
+  .wk-k { text-align:right; font-family:'JetBrains Mono',monospace; font-size:13px; }
+  .wk-k small { display:block; font-size:10px; color:var(--text-3); }
+  .wk-b { display:none; padding:0 16px 16px; border-top:1px solid var(--border); }
+  .wk.open .wk-b { display:block; }
+  .wk-rows { display:grid; grid-template-columns:repeat(auto-fit,minmax(230px,1fr)); gap:10px; margin-top:14px; }
+  .wk-row { background:rgba(0,0,0,0.22); border-radius:10px; padding:12px 14px; }
+  .wk-row .lab { font-size:10px; font-family:'JetBrains Mono',monospace; letter-spacing:1.5px; color:var(--text-3); text-transform:uppercase; margin-bottom:5px; }
+  .wk-row .val { font-size:13px; color:var(--text); line-height:1.5; }
+  .wk-row .val em { color:var(--text-2); font-style:normal; }
+  .coach { margin-top:12px; font-size:13px; color:var(--text-2); line-height:1.6; padding:12px 14px; border-radius:10px; background:rgba(232,177,74,0.06); border:1px solid rgba(232,177,74,0.12); }
+  .coach b { color:var(--gold); }
+  .tag { display:inline-block; font-size:10px; font-weight:700; letter-spacing:1px; padding:2px 8px; border-radius:6px; margin-left:6px; vertical-align:middle; text-transform:uppercase; }
+
+  /* Inputs */
+  .inp-row { display:flex; gap:10px; flex-wrap:wrap; align-items:flex-end; }
+  .inp { display:flex; flex-direction:column; gap:6px; }
+  .inp label { font-size:11px; font-family:'JetBrains Mono',monospace; letter-spacing:1.5px; text-transform:uppercase; color:var(--text-3); }
+  .inp input, .inp select { background:rgba(0,0,0,0.35); border:1px solid var(--border); color:var(--text); border-radius:10px; padding:11px 12px; font-family:'JetBrains Mono',monospace; font-size:15px; min-width:120px; outline:none; }
+  .inp input:focus, .inp select:focus { border-color:rgba(226,103,58,0.6); }
+  .btn { background:rgba(226,103,58,0.16); color:var(--terra); border:1px solid rgba(226,103,58,0.35); border-radius:10px; padding:11px 16px; font-family:'Outfit',sans-serif; font-weight:600; font-size:13px; cursor:pointer; }
+  .btn:hover { background:rgba(226,103,58,0.26); }
+  .btn.ghost { background:transparent; color:var(--text-2); border-color:var(--border); }
+  .btn.ghost:hover { color:var(--text); }
+
+  /* Zones */
+  .zone { display:grid; grid-template-columns:150px 1fr 120px; gap:14px; align-items:center; padding:16px 18px; border-radius:14px; background:var(--card); border:1px solid var(--border); border-left:4px solid var(--zc); margin-bottom:8px; }
+  .zone .zn { font-weight:700; font-size:15px; }
+  .zone .zn small { display:block; font-size:11px; color:var(--text-3); font-weight:500; margin-top:2px; }
+  .zone .zd { font-size:13px; color:var(--text-2); line-height:1.5; }
+  .zone .zp { font-family:'JetBrains Mono',monospace; font-size:18px; font-weight:700; text-align:right; color:var(--zc); }
+  .zone .zp small { display:block; font-size:11px; color:var(--text-3); font-weight:500; }
+  @media(max-width:640px){ .zone{grid-template-columns:1fr; gap:6px} .zone .zp{text-align:left} }
+
+  .eq { text-align:center; padding:18px 10px; border-radius:14px; background:rgba(0,0,0,0.25); border:1px solid var(--border); }
+  .eq .d { font-size:11px; font-family:'JetBrains Mono',monospace; letter-spacing:2px; color:var(--text-3); text-transform:uppercase; }
+  .eq .t { font-family:'JetBrains Mono',monospace; font-size:24px; font-weight:700; margin-top:6px; }
+  .eq .p { font-size:12px; color:var(--text-2); margin-top:4px; }
+
+  /* Tables */
+  .tbl-wrap { overflow-x:auto; background:var(--card); border:1px solid var(--border); border-radius:16px; }
+  table { width:100%; border-collapse:collapse; font-size:13px; }
+  th { padding:12px 14px; text-align:left; color:var(--text-3); font-weight:600; font-size:10px; text-transform:uppercase; letter-spacing:1.2px; border-bottom:1px solid var(--border); font-family:'JetBrains Mono',monospace; white-space:nowrap; }
+  td { padding:11px 14px; border-bottom:1px solid rgba(255,255,255,0.03); color:var(--text-2); white-space:nowrap; }
+  tr:last-child td { border-bottom:none; }
+  td.hl { color:var(--text); font-weight:600; font-family:'JetBrains Mono',monospace; }
+  td.m { font-family:'JetBrains Mono',monospace; }
+
+  .chart-card { background:var(--card); border:1px solid var(--border); border-radius:16px; padding:20px; margin-bottom:14px; }
+  .chart-title { font-size:13px; color:var(--text-2); margin-bottom:14px; font-weight:500; }
+  .empty { border:1px dashed rgba(255,255,255,0.12); border-radius:14px; padding:22px; text-align:center; color:var(--text-2); font-size:14px; line-height:1.6; }
+  .empty b { color:var(--gold); }
+
+  .rule { border-left:3px solid var(--rc); }
+  .rule h4 { font-size:15px; font-weight:700; margin-bottom:6px; }
+  .rule p { font-size:13px; color:var(--text-2); line-height:1.6; }
+
+  .timeline { position:relative; padding-left:22px; }
+  .timeline::before { content:''; position:absolute; left:6px; top:6px; bottom:6px; width:2px; background:var(--border); }
+  .tl { position:relative; padding:0 0 16px; }
+  .tl::before { content:''; position:absolute; left:-21px; top:5px; width:10px; height:10px; border-radius:50%; background:var(--gold); }
+  .tl .tt { font-family:'JetBrains Mono',monospace; font-size:12px; color:var(--gold); }
+  .tl .tx { font-size:13px; color:var(--text-2); line-height:1.55; margin-top:2px; }
+
+  code { font-family:'JetBrains Mono',monospace; font-size:12px; background:rgba(255,255,255,0.06); padding:1px 6px; border-radius:5px; color:var(--text); }
+  .footer { margin-top:48px; font-size:12px; color:var(--text-3); text-align:center; line-height:1.7; }
+  @media(max-width:600px){ .countdown{grid-template-columns:repeat(2,1fr)} .cd-n{font-size:28px} .hero{padding:24px} .wk-h{grid-template-columns:52px 1fr} .wk-k{display:none} }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <div class="header">
+    <div class="header-label">Garmin · Zwift · Marathon Block 2026–27</div>
+    <h1>Maratona di Roma</h1>
+    <div class="header-sub">
+      First marathon · <b>Sunday 14 March 2027</b> · 22-week block from 12 Oct 2026<br>
+      Primary goal <b>sub-3:45</b> · Stretch goal <b>sub-3:30</b> · 3–4 runs a week, with Zwift and the pool for extra aerobic work
+    </div>
+  </div>
+
+  <div class="tabs" role="tablist">
+    <button class="tab-btn active" data-tab="overview">Overview</button>
+    <button class="tab-btn" data-tab="plan">22-Week Plan</button>
+    <button class="tab-btn" data-tab="paces">Pace Zones</button>
+    <button class="tab-btn" data-tab="predictor">Predictor &amp; Readiness</button>
+    <button class="tab-btn" data-tab="log">Training Log</button>
+    <button class="tab-btn" data-tab="race">🏛️ Race Day</button>
+  </div>
+
+  <!-- ================= OVERVIEW ================= -->
+  <section id="tab-overview" class="tab-content active">
+    <div class="hero">
+      <span class="badge" style="background:rgba(232,177,74,0.15);color:var(--gold)">First Marathon · Goal Event 2027</span>
+      <h2>Run Rome The Marathon</h2>
+      <div class="meta">
+        <strong>Sunday 14 March 2027</strong> · Start: Via dei Fori Imperiali, with the Colosseum behind you<br>
+        <strong>42.195 km</strong> · Flat overall (8–31 m elevation) · Sections on <strong>sampietrini</strong> cobbles · Finish back at the Fori Imperiali
+      </div>
+      <div class="countdown" id="countdown"></div>
+    </div>
+
+    <div class="grid g4" id="ov-stats"></div>
+
+    <div class="section-title">This Week</div>
+    <div class="card this-week" id="this-week"></div>
+
+    <div class="section-title">Race Targets</div>
+    <div class="grid g2" id="goal-cards"></div>
+
+    <div class="section-title">Readiness vs Sub-3:45</div>
+    <div class="card" id="ov-readiness"></div>
+
+    <div class="section-title">How This Block Works</div>
+    <div class="grid g3">
+      <div class="card rule" style="--rc:var(--terra)"><h4>🏃 3–4 runs, each with a job</h4><p>One <b>long run</b>, one <b>quality session</b> (threshold, intervals, or marathon pace), and one or two <b>genuinely easy</b> runs. Junk miles are cut; every run has a purpose.</p></div>
+      <div class="card rule" style="--rc:var(--zwift)"><h4>🚴 Zwift is your aerobic multiplier</h4><p>2–3 Zwift sessions a week add aerobic volume without the impact of running. Most of them should be <b>Z2 (HR &lt;130)</b>. Zwift races are fine once a fortnight in Phases 1–3, then stop from January.</p></div>
+      <div class="card rule" style="--rc:var(--swim)"><h4>🏊 Swim for recovery &amp; technique</h4><p>One easy 30–45 min swim a week, ideally the day after the long run. Drills plus relaxed aerobic sets. It keeps your stroke over winter and flushes your legs.</p></div>
+      <div class="card rule" style="--rc:var(--good)"><h4>❤️ Keep easy runs easy</h4><p>Your easy runs have tended to drift into Z3 (HR 137–141). For this block, easy means <b>HR &lt;130</b>, even if that's 6:00+/km. Run about 80% of the week easy and 20% hard.</p></div>
+      <div class="card rule" style="--rc:var(--sleep)"><h4>🌙 Bed before 11:30 PM</h4><p>Your own data shows it: in bed before 11:30 PM, sleep score is 83+; after midnight, it's around 73. Long-run weekends and the peak weeks depend on it.</p></div>
+      <div class="card rule" style="--rc:var(--gold)"><h4>⛽ Train the gut</h4><p>From December, every long run of 20 km or more is a fuelling rehearsal: 60–90 g carbs per hour using the gels you'll race with. A first marathon usually goes wrong at 32 km because of fuelling, not fitness.</p></div>
+    </div>
+  </section>
+
+  <!-- ================= PLAN ================= -->
+  <section id="tab-plan" class="tab-content">
+    <div class="section-title" style="margin-top:0">Block at a Glance</div>
+    <div class="phase-strip" id="phase-strip"></div>
+    <div class="phase-legend"><span>12 Oct</span><span>Christmas</span><span>14 Mar · Race</span></div>
+
+    <div class="section-title">Weekly Volume Projection</div>
+    <div class="chart-card"><div style="height:280px"><canvas id="planChart"></canvas></div>
+      <div class="note">Run km (bars) against long run distance (line). Cutback weeks (W4, W8, W12, W16) let your body absorb the work. Zwift and swim hours are planned separately; see each week.</div>
+    </div>
+
+    <div class="section-title">Phases</div>
+    <div class="grid g2" id="phase-cards"></div>
+
+    <div class="section-title">Week by Week</div>
+    <p class="section-sub">Tap a week to open it. Target paces in each week <b>move gradually</b> from your current fitness towards goal pace, and they update when you enter a current race result in the Pace Zones tab. These are guidelines, not prescriptions: shuffle days around work and weather.</p>
+    <div class="week-list" id="week-list"></div>
+  </section>
+
+  <!-- ================= PACES ================= -->
+  <section id="tab-paces" class="tab-content">
+    <div class="section-title" style="margin-top:0">Training Pace Calculator</div>
+    <p class="section-sub">Enter a race result or a goal time. The paces come from Jack Daniels' VDOT model. Use a <b>recent real result</b> for day-to-day training, and the <b>goal</b> to see where you're heading.</p>
+    <div class="card">
+      <div class="inp-row">
+        <div class="inp"><label for="pc-dist">Distance</label>
+          <select id="pc-dist"><option value="5000">5K</option><option value="10000">10K</option><option value="21097.5">Half Marathon</option><option value="42195" selected>Marathon</option></select></div>
+        <div class="inp"><label for="pc-time">Time (h:mm:ss)</label><input id="pc-time" value="3:45:00" inputmode="numeric"></div>
+        <button class="btn" id="pc-go">Calculate</button>
+        <button class="btn ghost" data-preset="42195|3:45:00">Sub-3:45 goal</button>
+        <button class="btn ghost" data-preset="42195|3:30:00">Sub-3:30 stretch</button>
+        <button class="btn ghost" data-preset="5000|20:40">Troon parkrun, Feb '26 (4:08/km)</button>
+      </div>
+      <div class="note" id="pc-vdot"></div>
+    </div>
+
+    <div class="section-title">Your Training Zones</div>
+    <div id="zones"></div>
+
+    <div class="section-title">Equivalent Performances</div>
+    <div class="grid g4" id="pc-eq"></div>
+
+    <div class="section-title">Set Your Current Fitness</div>
+    <div class="card">
+      <p class="body">Saving a <b>current</b> result tells the 22-week plan where you're starting from. Each week's target paces then progress from this level to goal pace by Week 18. The W4 parkrun and W8 10K checks are the natural times to update it.</p>
+      <div class="inp-row" style="margin-top:14px">
+        <div class="inp"><label for="cf-dist">Distance</label>
+          <select id="cf-dist"><option value="5000">5K</option><option value="10000">10K</option><option value="21097.5">Half Marathon</option><option value="42195">Marathon</option></select></div>
+        <div class="inp"><label for="cf-time">Time</label><input id="cf-time" placeholder="e.g. 21:30"></div>
+        <button class="btn" id="cf-save">Save as current fitness</button>
+        <button class="btn ghost" id="cf-clear">Clear</button>
+      </div>
+      <div class="note" id="cf-status"></div>
+    </div>
+  </section>
+
+  <!-- ================= PREDICTOR ================= -->
+  <section id="tab-predictor" class="tab-content">
+    <div class="section-title" style="margin-top:0">Marathon Readiness</div>
+    <div class="card" id="pr-readiness"></div>
+
+    <div class="section-title">Finish Time Predictor</div>
+    <p class="section-sub">Enter your most recent race or time trial. The raw VDOT equivalent assumes full marathon training. The <b>realistic range</b> adds a penalty for a first marathon based on your logged long runs and weekly volume. The penalty shrinks as the block goes on.</p>
+    <div class="card">
+      <div class="inp-row">
+        <div class="inp"><label for="pr-dist">Recent result</label>
+          <select id="pr-dist"><option value="5000">5K</option><option value="10000">10K</option><option value="21097.5" selected>Half Marathon</option></select></div>
+        <div class="inp"><label for="pr-time">Time</label><input id="pr-time" placeholder="e.g. 1:42:00"></div>
+        <button class="btn" id="pr-go">Predict</button>
+      </div>
+      <div id="pr-out" style="margin-top:18px"></div>
+    </div>
+
+    <div class="section-title">On-Track Checkpoints</div>
+    <p class="section-sub">Benchmark efforts built into the plan, with the time that shows you're on track for each goal (VDOT equivalents).</p>
+    <div class="tbl-wrap"><table><thead><tr><th>Week</th><th>Checkpoint</th><th>Sub-3:45 on track</th><th>Sub-3:30 on track</th><th>Your result</th></tr></thead><tbody id="checkpoints"></tbody></table></div>
+
+    <div class="section-title">Garmin Marathon Prediction Trend</div>
+    <div class="chart-card"><div style="height:260px"><canvas id="garminChart"></canvas></div>
+      <div class="note">Garmin's predictor is based on VO₂ max and tends to be <b>optimistic for a first marathon</b>: it doesn't know how long your longest run is. Read it as a ceiling, not a target. The March 2026 value (3:20) comes from the Geordieman dashboard.</div>
+    </div>
+  </section>
+
+  <!-- ================= LOG ================= -->
+  <section id="tab-log" class="tab-content">
+    <div class="section-title" style="margin-top:0">Weekly Log</div>
+    <div id="log-empty"></div>
+    <div class="grid g4" id="log-stats"></div>
+
+    <div class="section-title">Run Volume — Plan vs Actual</div>
+    <div class="chart-card"><div style="height:260px"><canvas id="volChart"></canvas></div></div>
+
+    <div class="grid g2">
+      <div class="chart-card"><div class="chart-title">Long Run Progression (km)</div><div style="height:230px"><canvas id="lrChart"></canvas></div></div>
+      <div class="chart-card"><div class="chart-title">Cross-Training (hours)</div><div style="height:230px"><canvas id="xtChart"></canvas></div></div>
+    </div>
+    <div class="grid g2">
+      <div class="chart-card"><div class="chart-title">Readiness Trend (%)</div><div style="height:230px"><canvas id="rdChart"></canvas></div></div>
+      <div class="chart-card"><div class="chart-title">Sleep Score (weekly avg)</div><div style="height:230px"><canvas id="slChart"></canvas></div></div>
+    </div>
+
+    <div class="section-title">Logged Weeks</div>
+    <div class="tbl-wrap"><table><thead><tr><th>Wk</th><th>Dates</th><th>Run km</th><th>Plan</th><th>Runs</th><th>Long</th><th>MP km</th><th>Zwift</th><th>Swim</th><th>Sleep</th><th>VO₂</th><th>Notes</th></tr></thead><tbody id="log-table"></tbody></table></div>
+
+    <div class="section-title">Weekly Update Routine</div>
+    <div class="card">
+      <p class="body">Each week, export your <b>Activities CSV</b> and <b>Sleep CSV</b> from Garmin Connect, screenshot <b>Training Status</b>, and drop them into the Rome Marathon folder. Claude adds a new entry to the <code>LOG</code> array at the top of the script in <code>index.html</code>. Every chart, readiness score and the predictor then recalculate on their own. Upload the new <code>index.html</code> and <code>README.md</code> to GitHub and the site updates.</p>
+    </div>
+  </section>
+
+  <!-- ================= RACE DAY ================= -->
+  <section id="tab-race" class="tab-content">
+    <div class="section-title" style="margin-top:0">The Course</div>
+    <div class="grid g3">
+      <div class="card"><div class="stat-label">Profile</div><div class="stat-value">8–31<small> m</small></div><div class="stat-sub">Flat overall. Short rises late on, plus a drop and a short climb in the final kilometre.</div></div>
+      <div class="card"><div class="stat-label">Surface</div><div class="stat-value" style="color:var(--gold)">Cobbles</div><div class="stat-sub">Runners report about 6–13 km of sampietrini in total: around the start, by the Vatican and in the final stretch. Slippery when wet.</div></div>
+      <div class="card"><div class="stat-label">Mid-March weather</div><div class="stat-value">15–19<small>°C</small></div><div class="stat-sub">Typical highs (lows 3–13°C). Has ranged from rain and thunderstorms to around 21°C. Warmer than Ayrshire, so plan fluids accordingly.</div></div>
+    </div>
+    <div class="grid g2" style="margin-top:14px">
+      <div class="card rule" style="--rc:var(--gold)"><h4>🏛️ Sights on the route</h4><p>Colosseum · Piazza Venezia &amp; the Vittoriano · Circo Massimo · the Lungotevere · Castel Sant'Angelo · Via della Conciliazione &amp; St Peter's. Enjoy them, but run your own pace.</p></div>
+      <div class="card rule" style="--rc:var(--danger)"><h4>⏱️ Cut-off &amp; aid</h4><p>In 2023 the limit was <b>6h30</b>. Refreshment stations at km 5, 7.3, 9.2, 13.4, 15, 17.7, 20.3, 21.2, 22.3, 25, 28.6, 30, 32.3, 35, 37.3, 40.2 and the finish. Electrolytes every ~5 km from km 5; sponges from 7.5 km. <b>Check the 2027 Race Info PDF</b>: these can change.</p></div>
+    </div>
+
+    <div class="section-title">Pacing Plan</div>
+    <p class="section-sub">Start about 5–8 s/km slower than goal pace for the first 10 km. Corrals are crowded and the early cobbles cost energy. Settle at goal pace from 10 to 30 km, hold it from 30 to 40, then empty the tank. Run to <b>effort and HR on the cobbles</b>, not the watch.</p>
+    <div class="inp-row" style="margin-bottom:12px">
+      <button class="btn" data-split="13500">Sub-3:45 splits</button>
+      <button class="btn ghost" data-split="12600">Sub-3:30 splits</button>
+    </div>
+    <div class="tbl-wrap"><table><thead><tr><th>Checkpoint</th><th>Pace this section</th><th>Clock time</th><th>Course note</th></tr></thead><tbody id="splits"></tbody></table></div>
+
+    <div class="section-title">Fuelling Plan</div>
+    <div class="grid g2">
+      <div class="card">
+        <h4 style="font-size:15px;margin-bottom:10px">⛽ In-race (target 60–80 g carbs/hr)</h4>
+        <div class="tbl-wrap" style="background:transparent;border:none"><table><thead><tr><th>When</th><th>What</th></tr></thead><tbody id="fuel-table"></tbody></table></div>
+        <div class="note">Take each gel just before a water station so you can wash it down. Practise this exact pattern on every long run of 20 km or more from Week 10. A 40 g gel (e.g. a "double" gel) at each point gets you to about 75 g/hr. A standard 22–25 g gel gives about 45–50 g/hr, so top up with the course electrolyte drink.</div>
+      </div>
+      <div class="card">
+        <h4 style="font-size:15px;margin-bottom:10px">🍝 Carb-load calculator</h4>
+        <div class="inp-row"><div class="inp"><label for="bw">Body weight (kg)</label><input id="bw" type="number" min="40" max="140" step="0.5" placeholder="e.g. 75"></div><button class="btn" id="bw-go">Calculate</button></div>
+        <div id="carb-out" style="margin-top:14px"></div>
+      </div>
+    </div>
+
+    <div class="section-title">Race Week &amp; Race Morning</div>
+    <div class="grid g2">
+      <div class="card"><div class="timeline">
+        <div class="tl"><div class="tt">Mon 8 – Wed 10 Mar</div><div class="tx">Normal routine, short runs. Tuesday: 3 × 2 km at marathon pace to stay sharp. Easy Zwift spin and one short swim. Bed before 11:30.</div></div>
+        <div class="tl"><div class="tt">Thu 11 Mar</div><div class="tx">Travel day (likely). 20 min shakeout on arrival. Hydrate on the flight.</div></div>
+        <div class="tl"><div class="tt">Fri 12 Mar</div><div class="tx">Carb-load day 1. Expo at Palazzo dei Congressi (EUR, based on previous years): bring printed confirmation and signed waiver/medical certificate as the 2027 guide requires. Keep sightseeing on foot to a minimum.</div></div>
+        <div class="tl"><div class="tt">Sat 13 Mar</div><div class="tx">Carb-load day 2. 15–20 min shakeout with 4 strides. Lay out your kit and pin your bib. Plan the metro route. Pasta dinner by 7 PM, then early to bed.</div></div>
+      </div></div>
+      <div class="card"><div class="timeline">
+        <div class="tl"><div class="tt">Wave start − 3h</div><div class="tx">Your tested breakfast (bagel/white toast, jam, banana, coffee) with 2–3 g carbs/kg. Nothing new.</div></div>
+        <div class="tl"><div class="tt">Wave start − 2h</div><div class="tx">Head to the start. Metro opens early. Line B to Circo Massimo is a short walk; in past years the Colosseo stop has been closed on race day.</div></div>
+        <div class="tl"><div class="tt">Wave start − 1h15</div><div class="tx">Bag drop (it closed about an hour before the start in 2023). Toilets: bring your own paper, as queues are long.</div></div>
+        <div class="tl"><div class="tt">Wave start − 15 min</div><div class="tx">Pre-start gel plus a few sips of water. Fill a throwaway bottle before you enter the corral, as there are no fountains inside. Wear a throwaway top.</div></div>
+        <div class="tl"><div class="tt">Gun</div><div class="tx">Stay calm through the first 10 km. Pacers carry coloured balloons, so find the 3:45 group, but run your own plan.</div></div>
+      </div></div>
+    </div>
+
+    <div class="section-title">Kit Checklist</div>
+    <div class="grid g3">
+      <div class="card"><h4 style="font-size:14px;margin-bottom:8px">👟 Shoes</h4><p class="body">Race shoes broken in with 2 or more long runs (including the W19 32 km). Good grip matters on wet cobbles. Avoid a brand-new super shoe on race day.</p></div>
+      <div class="card"><h4 style="font-size:14px;margin-bottom:8px">🎽 Clothing</h4><p class="body">Race-tested shorts and vest, anti-chafe (feet, thighs, chest), cap for sun or rain, throwaway layer for the corral. Pack a light rain shell for the bag.</p></div>
+      <div class="card"><h4 style="font-size:14px;margin-bottom:8px">⌚ Tech &amp; fuel</h4><p class="body">Garmin charged, with a marathon workout loaded (set auto-lap to 5 km so cobble GPS drift matters less). Gels in a belt or shorts. Bib, pins and printed race documents.</p></div>
+    </div>
+  </section>
+
+  <div class="footer">Built from Garmin Connect exports · Pace model: Daniels VDOT · Race info from runromethemarathon.com and past runner reports (confirm 2027 details in the official Event Guide)<br>Last updated: <span id="last-updated"></span></div>
+</div>
+
+<script>
+/* =====================================================================
+   DATA — this is the only block that changes in weekly updates.
+   ===================================================================== */
+const LAST_UPDATED = '2026-10-12';
+const RACE = { date:'2027-03-14T08:10:00+01:00', primary:3*3600+45*60, stretch:3*3600+30*60 };
+const BLOCK_START = '2026-10-12'; // Monday of Week 1
+
+// Reference points carried over from the Geordieman dashboard (Mar 2026)
+const HISTORY = {
+  vo2:54, vo2Date:'Mar 2026',
+  garminMarathon:[{label:'Mar 2026', sec:3*3600+20*60}],
+  parkrun:{dist:5000, sec:20*60+40, label:'Troon parkrun, 14 Feb 2026'},
+  longestRun:25.0, longestRunDate:'Feb 2025'
+};
+
+/* LOG: one object per completed week. Append each Monday after a Garmin upload.
+   wk           plan week number (1–22)
+   runKm        total run km              runs     number of runs
+   longRun      longest run km            mpKm     km at marathon pace (incl. inside long runs)
+   fuelled      true if a ≥20 km run used race fuelling
+   zwiftMin     Zwift minutes             zwiftKm  Zwift km
+   swimM        swim metres               strength strength/Hyrox sessions
+   sleep        avg sleep score           sleepHrs avg sleep hours
+   vo2          Garmin VO2 max            garminMara Garmin marathon prediction (seconds)
+   test         {name, sec} if a checkpoint effort was run
+   notes        short text
+*/
+const LOG = [
+  // e.g. { wk:1, runKm:31.2, runs:4, longRun:14.1, mpKm:0, fuelled:false, zwiftMin:125, zwiftKm:60, swimM:1600, strength:1, sleep:81, sleepHrs:7.9, vo2:54, garminMara:12300, notes:'Re-entry week' },
+];
+
+/* ---------------- Plan ---------------- */
+const PHASES = [
+  {n:1, name:'Rebuild',                 wks:[1,4],   col:'#3af0c7', focus:'Return from Geordieman to consistent running. Easy volume, strides, and a 5K test at the end.',
+   bullets:['Runs: 3–4 a week, mostly easy (HR <130), with strides once a week','Long run 14 → 16 km','Zwift: 2 × 60 min Z2. One race a fortnight is fine','Swim: 1 × easy technique','Strength: 1 session (single-leg, calves, core)']},
+  {n:2, name:'Aerobic Base',            wks:[5,9],   col:'#3a8ff0', focus:'Build the engine. Long run to 22 km, and threshold work becomes the weekly quality session.',
+   bullets:['Run volume 38 → 46 km','Threshold: 4 × 8 min → 3 × 2 km','One VO₂ session (6 × 1 km) keeps the top end sharp','Zwift: 1 Z2 ride + 1 sweet-spot (3 × 10 min)','10K check in W8']},
+  {n:3, name:'Strength & Threshold',    wks:[10,13], col:'#c58cf0', focus:'Over Christmas and New Year. Long runs reach 24–26 km and fuelling practice starts. Flexible around the holidays.',
+   bullets:['Long run 22 → 26 km. Start practising gels on every 20 km+ run','Threshold 3 × 3 km','Zwift: add one 90 min Z2 ride if Christmas allows','New Year parkrun as a fun check','Stop Zwift racing from W13']},
+  {n:4, name:'Marathon-Specific',       wks:[14,18], col:'#f08a5d', focus:'Marathon pace becomes the main work. Long runs include MP blocks, plus a half marathon tune-up in W18.',
+   bullets:['Long runs 26 → 30 km with 10–16 km at MP','Midweek MP or threshold sessions','Zwift: Z2 only, used as recovery and extra volume','Full race fuelling on every long run','Half marathon tune-up in W18']},
+  {n:5, name:'Peak',                    wks:[19,20], col:'#e2673a', focus:'The two biggest weeks: the 32 km peak long run, then a full dress rehearsal.',
+   bullets:['W19: 32 km with 16 km at MP, the key session of the block','W20: 26 km dress rehearsal (race kit, breakfast, gels)','Keep easy days truly easy','Sleep is the priority']},
+  {n:6, name:'Taper',                   wks:[21,22], col:'#e8b14a', focus:'Volume drops 40–60% while some intensity stays. Trust the training.',
+   bullets:['W21: about 40 km, long run 19 km','W22: short MP session Tuesday, then shakeouts','Zwift and swim: short and easy only','Carb load Fri–Sat']}
+];
+
+// km = planned run km; lr = long run km; lrNote; key = quality session; cut = cutback week
+const PLAN = [
+  {km:30, lr:14, key:'Easy 8 km + 6 × 20 s strides', note:'Re-entry week. Everything easy and conversational. The goal is to re-establish the habit, not to prove fitness.'},
+  {km:33, lr:15, key:'Fartlek: 8 × 1 min brisk / 1 min jog', note:'First taste of faster running. "Brisk" is around 10K effort, not flat out.'},
+  {km:36, lr:16, key:'3 × 8 min @ Threshold (2 min jog)', note:'Threshold should feel comfortably hard. You could say a short sentence, but you wouldn\'t want to.'},
+  {km:28, lr:12, key:'5K test: parkrun, all out', cut:true, test:'5K', note:'Cutback week. Enter your parkrun time in Pace Zones → "Set current fitness". It calibrates every pace in the plan.'},
+  {km:38, lr:18, key:'4 × 8 min @ Threshold (90 s jog)', note:'First 18 km long run since Geordieman. Keep HR under 135 for the whole run.'},
+  {km:42, lr:19, key:'6 × 1 km @ Interval pace (2 min jog)', note:'VO₂ max maintenance. Your 54 VO₂ max is an asset, so keep it topped up once a fortnight.'},
+  {km:45, lr:21, key:'2 × 15 min @ Threshold (3 min jog)', note:'Half marathon distance as an easy long run. Take one gel at 60 min to start getting used to it.'},
+  {km:34, lr:14, key:'10K check: time trial or race', cut:true, test:'10K', note:'Cutback week, plus a fitness check. Update current fitness if this beats your W4 5K equivalent.'},
+  {km:46, lr:22, key:'3 × 2 km @ Threshold (90 s jog)', note:'Longest run since Feb 2025\'s 25 km comes soon. Body is adapting well if the HR drift on the long run is small.'},
+  {km:48, lr:24, lrNote:'last 4 km @ Steady', key:'5 × 1 km @ Interval pace (2 min jog)', note:'Fuelling practice starts now: 1 gel every 25–30 min on the long run, the way you would in the race.'},
+  {km:44, lr:22, key:'20 min continuous @ Threshold (if Christmas allows)', note:'Christmas week. Flexible: swap days freely and get the long run in when you can. Zwift is your friend if the weather is grim.'},
+  {km:36, lr:16, key:'New Year\'s Day parkrun, or 5 × 3 min @ Interval', cut:true, note:'Cutback week to absorb the Christmas block. Enjoy it.'},
+  {km:50, lr:26, key:'3 × 3 km @ Threshold (2 min jog)', note:'Longest run of your life so far (26 km). Run it at easy pace with full fuelling. No Zwift races from this week.'},
+  {km:52, lr:26, lrNote:'incl. 2 × 5 km @ MP', key:'10 km @ Marathon Pace (+2 km WU/CD)', note:'Marathon pace arrives. MP should feel controlled, about HR 145–152. If it feels like threshold, the goal pace needs reviewing.'},
+  {km:55, lr:28, lrNote:'last 8 km @ MP', key:'5 × 2 km @ Threshold (90 s jog)', note:'Finishing fast on tired legs is the most race-specific long run there is.'},
+  {km:42, lr:18, key:'12 km @ Steady (MP + 10–15 s)', cut:true, note:'Cutback week. Your legs need it before the big February block.'},
+  {km:56, lr:30, lrNote:'full race fuelling', key:'12 km @ Marathon Pace', note:'First 30 km. Use exactly your race-day gels, timing and breakfast. Write down how your stomach handles it.'},
+  {km:50, lr:21, lrNote:'= tune-up race', key:'6 × 800 m @ Interval (midweek, short)', test:'HM', note:'Half marathon tune-up, raced hard. This is the best predictor of race-day pace there is. Enter it in the Predictor tab.'},
+  {km:60, lr:32, lrNote:'incl. 16 km @ MP', key:'3 × 3 km @ Threshold', note:'Peak week and the key session of the block. If this goes well, you\'re ready.'},
+  {km:52, lr:26, lrNote:'dress rehearsal: 18 km @ MP', key:'8 × 1 km @ MP − 5 s (1 min jog)', note:'Full dress rehearsal: race kit, race breakfast at race-time minus 3 h, race gels. Nothing new in Rome.'},
+  {km:40, lr:19, key:'8 km @ Marathon Pace', note:'Taper begins. You may feel flat or niggly; that\'s normal. Don\'t add extra sessions.'},
+  {km:15, lr:42.2, lrNote:'RACE: Sunday 14 March', key:'Tue: 3 × 2 km @ MP, then shakeouts only', race:true, note:'Race week. Carb load Fri–Sat. Bed early Thu–Sat. See the Race Day tab.'}
+];
+
+// Cross-training per phase
+const XT = {
+  1:{zwift:'2 × 60 min Z2 (HR <130)', zwiftHrs:2, swim:'1 × 30–40 min: drills + easy 1.5 km', swimHrs:0.6, str:'1 × 30 min strength'},
+  2:{zwift:'60 min Z2 + 60 min sweet-spot (3 × 10 min @ 88–93% FTP)', zwiftHrs:2.25, swim:'1 × 40 min: drills + 2 km aerobic', swimHrs:0.7, str:'1 × 30–40 min strength'},
+  3:{zwift:'2–3 rides: 90 min Z2 + 60 min Z2 (+ optional 45 min spin)', zwiftHrs:3, swim:'1 × 40 min easy (day after long run)', swimHrs:0.7, str:'1 × 30 min strength'},
+  4:{zwift:'2 × 45–60 min Z2 recovery spin. No racing', zwiftHrs:1.75, swim:'1 × 30–40 min easy recovery', swimHrs:0.6, str:'1 × 25 min strength (maintenance)'},
+  5:{zwift:'2 × 45 min Z2 recovery spin', zwiftHrs:1.5, swim:'1 × 30 min easy recovery', swimHrs:0.5, str:'1 × 20 min (light)'},
+  6:{zwift:'1–2 × 30–40 min easy spin', zwiftHrs:0.75, swim:'Optional 20–30 min loosen', swimHrs:0.4, str:'Mobility only'}
+};
+
+/* =====================================================================
+   HELPERS
+   ===================================================================== */
+const $ = id => document.getElementById(id);
+const DAY = 864e5;
+const store = { get(k){ try{ return JSON.parse(localStorage.getItem(k)); }catch(e){ return null; } },
+                set(k,v){ try{ localStorage.setItem(k, JSON.stringify(v)); }catch(e){} },
+                del(k){ try{ localStorage.removeItem(k); }catch(e){} } };
+
+function parseTime(s){ if(!s) return NaN; const p=String(s).trim().split(':').map(Number); if(p.some(isNaN)) return NaN;
+  if(p.length===3) return p[0]*3600+p[1]*60+p[2]; if(p.length===2) return p[0]*60+p[1]; return p[0]*60; }
+function fmt(sec){ sec=Math.round(sec); const h=Math.floor(sec/3600), m=Math.floor(sec%3600/60), s=sec%60;
+  return h ? `${h}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}` : `${m}:${String(s).padStart(2,'0')}`; }
+function pace(spk){ spk=Math.round(spk); return `${Math.floor(spk/60)}:${String(spk%60).padStart(2,'0')}`; }
+function dShort(d){ return d.toLocaleDateString('en-GB',{day:'numeric',month:'short'}); }
+function addDays(d,n){ const x=new Date(d); x.setDate(x.getDate()+n); return x; }
+function weekStart(n){ return addDays(new Date(BLOCK_START+'T00:00:00'),(n-1)*7); }
+function phaseOf(wk){ return PHASES.find(p=>wk>=p.wks[0]&&wk<=p.wks[1]); }
+function currentWeek(){ const t=new Date(); t.setHours(0,0,0,0); const d=Math.round((t-new Date(BLOCK_START+'T00:00:00'))/DAY); return Math.floor(d/7)+1; }
+const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+
+/* Daniels VDOT model */
+const vo2Cost = v => -4.60 + 0.182258*v + 0.000104*v*v;               // v in m/min
+const pctMax  = t => 0.8 + 0.1894393*Math.exp(-0.012778*t) + 0.2989558*Math.exp(-0.1932605*t); // t in min
+function vdot(distM, sec){ const t=sec/60; return vo2Cost(distM/t)/pctMax(t); }
+function velAt(vd, f){ const c=-4.60-f*vd; return (-0.182258+Math.sqrt(0.182258**2-4*0.000104*c))/(2*0.000104); }
+const spkFromVel = v => 60000/v;
+function predict(vd, distM){ let lo=distM/1000*100, hi=distM/1000*900;
+  for(let i=0;i<80;i++){ const m=(lo+hi)/2; if(vdot(distM,m)>vd) lo=m; else hi=m; } return (lo+hi)/2; }
+function zonesFor(vd){
+  const mp = predict(vd,42195)/42.195;
+  return {
+    easy:[spkFromVel(velAt(vd,0.70)), spkFromVel(velAt(vd,0.62))],
+    steady:[mp+12, mp+30],
+    mp:[mp-3, mp+3],
+    thr:[spkFromVel(velAt(vd,0.885)), spkFromVel(velAt(vd,0.875))],
+    int:[spkFromVel(velAt(vd,0.98)), spkFromVel(velAt(vd,0.96))],
+    rep:spkFromVel(velAt(vd,1.05)), mpRaw:mp
+  };
+}
+const GOAL_VD = vdot(42195, RACE.primary);
+const STRETCH_VD = vdot(42195, RACE.stretch);
+function currentFitness(){ const c=store.get('rome.current'); if(c&&c.dist&&c.sec) return {...c, vd:vdot(c.dist,c.sec)}; return null; }
+function weekVD(wk){ const cf=currentFitness(); if(!cf) return GOAL_VD; const f=clamp((wk-1)/17,0,1);
+  // Never prescribe paces faster than goal if current fitness is already above it
+  return cf.vd>=GOAL_VD ? GOAL_VD : cf.vd+(GOAL_VD-cf.vd)*f; }
+
+/* =====================================================================
+   READINESS MODEL (vs sub-3:45)
+   ===================================================================== */
+const PLAN_KM = PLAN.map(p=>p.km);
+function readiness(log){
+  if(!log.length) return null;
+  const last = (n)=>log.slice(-n);
+  const longest = Math.max(...last(4).map(w=>w.longRun||0));
+  const avgVol = last(4).reduce((a,w)=>a+(w.runKm||0),0)/Math.min(4,log.length);
+  const mp6 = last(6).reduce((a,w)=>a+(w.mpKm||0),0);
+  const fuelled = log.filter(w=>w.fuelled).length;
+  const cons = log.reduce((a,w)=>a+clamp((w.runKm||0)/PLAN_KM[w.wk-1],0,1.1),0)/log.length;
+  const preds = log.filter(w=>w.garminMara).map(w=>w.garminMara);
+  const tests = log.filter(w=>w.test&&w.test.dist&&w.test.sec);
+  let engineSec = null, engineSrc='';
+  if(tests.length){ const t=tests[tests.length-1].test; engineSec=predict(vdot(t.dist,t.sec),42195)*1.04; engineSrc=`${t.name} (+4% first-marathon allowance)`; }
+  else if(preds.length){ engineSec=preds[preds.length-1]*1.06; engineSrc='Garmin prediction (+6% first-marathon allowance)'; }
+  const engine = engineSec==null ? null : clamp(85+(RACE.primary-engineSec)/60*1.5,0,100);
+  const f = [
+    {k:'Long run',      w:30, v:clamp(longest/32*100,0,100), d:`Longest in last 4 wks: ${longest.toFixed(1)} km / 32 km target`, c:'var(--terra)'},
+    {k:'Weekly volume', w:20, v:clamp(avgVol/55*100,0,100),  d:`4-wk avg: ${avgVol.toFixed(1)} km / 55 km peak`, c:'var(--gold)'},
+    {k:'Marathon-pace work', w:15, v:clamp(mp6/30*100,0,100), d:`${mp6.toFixed(1)} km at MP in last 6 wks / 30 km`, c:'var(--mp)'},
+    {k:'Aerobic engine', w:15, v:engine, d: engine==null?'Awaiting a test result or Garmin prediction':`Projected ${fmt(engineSec)} via ${engineSrc}`, c:'var(--good)'},
+    {k:'Fuelling practice', w:10, v:clamp(fuelled/6*100,0,100), d:`${fuelled} fuelled long runs / 6`, c:'var(--warn)'},
+    {k:'Consistency', w:10, v:clamp(cons*100,0,100), d:`${Math.round(cons*100)}% of planned run km completed`, c:'var(--zwift)'}
+  ];
+  const measured = f.filter(x=>x.v!=null);
+  const total = measured.reduce((a,x)=>a+x.v*x.w,0)/measured.reduce((a,x)=>a+x.w,0);
+  return {total:Math.round(total), factors:f};
+}
+
+function ringSVG(pct,col){ const r=60,c=2*Math.PI*r,off=c*(1-(pct||0)/100);
+  return `<svg width="140" height="140" viewBox="0 0 140 140"><circle cx="70" cy="70" r="${r}" fill="none" stroke="rgba(255,255,255,0.06)" stroke-width="10"/>
+  <circle cx="70" cy="70" r="${r}" fill="none" stroke="${col}" stroke-width="10" stroke-linecap="round" stroke-dasharray="${c}" stroke-dashoffset="${off}"/></svg>`; }
+
+function readinessHTML(full){
+  const r = readiness(LOG);
+  if(!r){
+    const factors = ['Long run (30%) · longest run in last 4 weeks vs 32 km','Weekly volume (20%) · 4-week average vs 55 km peak','Marathon-pace work (15%) · MP km in last 6 weeks vs 30 km','Aerobic engine (15%) · predicted finish from test efforts / Garmin','Fuelling practice (10%) · fuelled long runs vs 6','Consistency (10%) · % of planned km completed'];
+    return `<div class="ring-wrap"><div class="ring">${ringSVG(0,'var(--terra)')}<div class="ring-c"><div class="v" style="color:var(--text-3)">—</div><div class="l">Readiness</div></div></div>
+      <div style="flex:1;min-width:260px"><div class="empty" style="text-align:left">Readiness sets itself after your <b>first Garmin upload</b>. Until then there's no current data to score honestly.<br>Starting point: 20–35 km/week of running after Geordieman, VO₂ max 54 when last recorded (${HISTORY.vo2Date}), and a 25 km longest-ever run.</div></div></div>
+      ${full?`<div class="section-title" style="font-size:15px">How it's scored</div><div class="grid g2">${factors.map(f=>`<div class="factor-d" style="font-size:13px;color:var(--text-2)">• ${f}</div>`).join('')}</div>`:''}`;
+  }
+  const col = r.total>=80?'var(--good)':r.total>=55?'var(--gold)':'var(--terra)';
+  return `<div class="ring-wrap"><div class="ring">${ringSVG(r.total,col)}<div class="ring-c"><div class="v" style="color:${col}">${r.total}%</div><div class="l">vs sub-3:45</div></div></div>
+    <div style="flex:1;min-width:260px">${r.factors.map(f=>`<div class="factor"><div class="factor-h"><span>${f.k} <span style="color:var(--text-3)">(${f.w}%)</span></span><span style="color:${f.c}">${f.v==null?'—':Math.round(f.v)+'%'}</span></div>
+      <div class="bar"><div style="width:${f.v||0}%;background:${f.c}"></div></div>${full?`<div class="factor-d">${f.d}</div>`:''}</div>`).join('')}</div></div>`;
+}
+
+/* =====================================================================
+   RENDER
+   ===================================================================== */
+// Tabs
+document.querySelectorAll('.tab-btn').forEach(b=>b.addEventListener('click',()=>{
+  document.querySelectorAll('.tab-btn,.tab-content').forEach(e=>e.classList.remove('active'));
+  b.classList.add('active'); $('tab-'+b.dataset.tab).classList.add('active');
+  store.set('rome.tab',b.dataset.tab);
+  if(window.Chart) requestAnimationFrame(()=>Object.values(Chart.instances).forEach(c=>c.resize()));
+}));
+
+// Countdown
+function countdown(){
+  const diff=new Date(RACE.date)-new Date();
+  if(diff<=0){ $('countdown').innerHTML='<div class="cd" style="grid-column:1/-1"><div class="cd-n">FINITO 🏅</div><div class="cd-l">Race complete</div></div>'; return; }
+  const days=Math.floor(diff/DAY), hrs=Math.floor(diff%DAY/36e5);
+  $('countdown').innerHTML=[[Math.floor(days/30.44),'Months'],[Math.floor(days/7),'Weeks'],[days,'Days'],[hrs,'Hours']]
+    .map(([n,l])=>`<div class="cd"><div class="cd-n">${n}</div><div class="cd-l">${l}</div></div>`).join('');
+}
+countdown(); setInterval(countdown,60000);
+
+const CW = clamp(currentWeek(),1,22);
+const CP = phaseOf(CW);
+
+// Overview stats
+(function(){
+  const lastLog = LOG[LOG.length-1];
+  const lr = LOG.length?Math.max(...LOG.map(w=>w.longRun||0)):null;
+  const gp = RACE.primary/42.195;
+  $('ov-stats').innerHTML = [
+    ['Block week', `${CW}<small> / 22</small>`, `Phase ${CP.n}: ${CP.name}`, 'var(--terra)'],
+    ['Goal pace', `${pace(gp)}<small>/km</small>`, `Sub-3:45 · stretch ${pace(RACE.stretch/42.195)}/km`, 'var(--gold)'],
+    ['Longest run (block)', lr?`${lr.toFixed(1)}<small> km</small>`:'—', lr?'target: 32 km in W19':`All-time: ${HISTORY.longestRun} km (${HISTORY.longestRunDate})`, 'var(--text)'],
+    ['VO₂ max', `${lastLog&&lastLog.vo2?lastLog.vo2:HISTORY.vo2}`, lastLog&&lastLog.vo2?'latest Garmin reading':`last recorded ${HISTORY.vo2Date}`, 'var(--good)']
+  ].map(([l,v,s,c])=>`<div class="card"><div class="stat-label">${l}</div><div class="stat-value" style="color:${c}">${v}</div><div class="stat-sub">${s}</div></div>`).join('');
+})();
+
+// This week
+function weekDetail(wk){
+  const p=PLAN[wk-1], ph=phaseOf(wk), xt=XT[ph.n], z=zonesFor(weekVD(wk));
+  const easyKm = Math.max(0, p.km - (p.race?0:p.lr) - 10);
+  return {p,ph,xt,z,easyKm};
+}
+(function(){
+  const {p,ph,xt,z}=weekDetail(CW);
+  const s=weekStart(CW), e=addDays(s,6);
+  const days=[
+    ['MON','<span class="dot" style="background:var(--str)"></span><b>Rest</b> or strength', ],
+    ['TUE',`<span class="dot" style="background:var(--terra)"></span><b>Quality</b><br>${p.key}`],
+    ['WED',`<span class="dot" style="background:var(--zwift)"></span><b>Zwift</b><br>${xt.zwift.split('+')[0]}`],
+    ['THU',`<span class="dot" style="background:var(--good)"></span><b>Easy run</b><br>${pace(z.easy[0])}–${pace(z.easy[1])}/km, HR &lt;130`],
+    ['FRI',`<span class="dot" style="background:var(--swim)"></span><b>Swim</b> or rest<br>${xt.swim.split(':')[0]}`],
+    ['SAT',`<span class="dot" style="background:var(--zwift)"></span><b>Zwift Z2</b> or optional easy run`],
+    ['SUN',`<span class="dot" style="background:var(--gold)"></span><b>${p.race?'RACE DAY':'Long run'}</b><br>${p.race?'Rome 🏛️':p.lr+' km'}${p.lrNote&&!p.race?' · '+p.lrNote:''}`]
+  ];
+  $('this-week').innerHTML = `<div style="display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;align-items:baseline">
+    <div><div class="stat-label">Week ${CW} · ${dShort(s)} – ${dShort(e)}</div><div style="font-size:20px;font-weight:700">Phase ${ph.n}: ${ph.name}${p.cut?'<span class="tag" style="background:rgba(58,240,199,0.15);color:var(--swim)">Cutback</span>':''}</div></div>
+    <div class="mono" style="font-size:14px;color:var(--text-2)">${p.km} km run · long ${p.race?'42.2':p.lr} km · Zwift ~${xt.zwiftHrs}h</div></div>
+    <div class="day-grid">${days.map(([d,t])=>`<div class="day"><div class="dn">${d}</div><div class="ds">${t}</div></div>`).join('')}</div>
+    <div class="coach"><b>Coach note:</b> ${p.note}</div>`;
+})();
+
+// Goal cards
+(function(){
+  const card=(label,sec,col,sub)=>{ const vd=vdot(42195,sec), sp=sec/42.195;
+    return `<div class="goal" style="border-top:3px solid ${col}"><div class="stat-label">${label}</div><div class="t" style="color:${col}">${fmt(sec)}</div>
+      <div class="stat-sub" style="margin-bottom:12px">${sub}</div>
+      <div class="goal-row"><span>Average pace</span><span>${pace(sp)}/km</span></div>
+      <div class="goal-row"><span>Halfway split (even)</span><span>${fmt(sec/2)}</span></div>
+      <div class="goal-row"><span>Equivalent half marathon</span><span>${fmt(predict(vd,21097.5))}</span></div>
+      <div class="goal-row"><span>Equivalent 10K</span><span>${fmt(predict(vd,10000))}</span></div>
+      <div class="goal-row"><span>Equivalent 5K</span><span>${fmt(predict(vd,5000))}</span></div></div>`; };
+  $('goal-cards').innerHTML = card('Primary goal',RACE.primary,'var(--terra)','A strong, controlled first marathon') + card('Stretch goal',RACE.stretch,'var(--gold)','If the long runs and February tune-up go well');
+})();
+
+$('ov-readiness').innerHTML = readinessHTML(false);
+$('pr-readiness').innerHTML = readinessHTML(true);
+
+/* ---------- Plan tab ---------- */
+$('phase-strip').innerHTML = PHASES.map(p=>{ const n=p.wks[1]-p.wks[0]+1;
+  return `<div style="flex:${n};background:${p.col}" title="Phase ${p.n}: ${p.name}">${n>=3?p.name:p.n}</div>`; }).join('');
+$('phase-cards').innerHTML = PHASES.map(p=>{ const s=weekStart(p.wks[0]), e=addDays(weekStart(p.wks[1]),6);
+  return `<div class="phase-card" style="--pc:${p.col}"><h4>Phase ${p.n}: ${p.name}</h4><div class="pd">Weeks ${p.wks[0]}–${p.wks[1]} · ${dShort(s)} – ${dShort(e)}</div>
+  <p>${p.focus}</p><ul>${p.bullets.map(b=>`<li>${b}</li>`).join('')}</ul></div>`; }).join('');
+
+function renderWeeks(){
+  $('week-list').innerHTML = PLAN.map((p,i)=>{
+    const wk=i+1, {ph,xt,z,easyKm}=weekDetail(wk), s=weekStart(wk);
+    const cls = wk===CW?'current open':wk<CW?'past':'';
+    const tags = (p.cut?'<span class="tag" style="background:rgba(58,240,199,0.15);color:var(--swim)">Cutback</span>':'')+
+                 (p.test?'<span class="tag" style="background:rgba(232,177,74,0.15);color:var(--gold)">Test</span>':'')+
+                 (p.race?'<span class="tag" style="background:rgba(226,103,58,0.2);color:var(--terra)">Race</span>':'')+
+                 (wk===CW?'<span class="tag" style="background:rgba(226,103,58,0.2);color:var(--terra)">Now</span>':'');
+    return `<div class="wk ${cls}"><div class="wk-h"><div class="wk-n" style="color:${ph.col}">W${wk}<small>${dShort(s)}</small></div>
+      <div class="wk-t">${p.race?'Race Week':p.key}${tags}<small>Phase ${ph.n} · ${ph.name}</small></div>
+      <div class="wk-k">${p.km} km<small>long ${p.race?'42.2':p.lr} km</small></div></div>
+      <div class="wk-b"><div class="wk-rows">
+        <div class="wk-row"><div class="lab">Long run</div><div class="val">${p.race?'<b>Rome Marathon, 42.2 km</b>':`${p.lr} km easy at ${pace(z.easy[0])}–${pace(z.easy[1])}/km`}${p.lrNote&&!p.race?`<br><em>${p.lrNote.replace('MP',`MP (${pace(z.mp[0])}–${pace(z.mp[1])}/km)`)}</em>`:''}</div></div>
+        <div class="wk-row"><div class="lab">Quality session</div><div class="val">${p.key}<br><em>T ${pace(z.thr[0])}–${pace(z.thr[1])} · I ${pace(z.int[0])}–${pace(z.int[1])} · MP ${pace(z.mp[0])}–${pace(z.mp[1])}</em></div></div>
+        <div class="wk-row"><div class="lab">Easy runs</div><div class="val">${p.race?'2–3 × 20–30 min shakeouts':`1–2 runs, ~${easyKm} km total`}<br><em>${pace(z.easy[0])}–${pace(z.easy[1])}/km · HR &lt;130</em></div></div>
+        <div class="wk-row"><div class="lab">Zwift</div><div class="val">${xt.zwift}</div></div>
+        <div class="wk-row"><div class="lab">Swim</div><div class="val">${xt.swim}</div></div>
+        <div class="wk-row"><div class="lab">Strength</div><div class="val">${xt.str}</div></div>
+      </div><div class="coach"><b>Coach note:</b> ${p.note}</div></div></div>`;
+  }).join('');
+  document.querySelectorAll('.wk-h').forEach(h=>h.addEventListener('click',()=>h.parentElement.classList.toggle('open')));
+}
+renderWeeks();
+
+/* ---------- Paces tab ---------- */
+function renderPaces(distM, sec){
+  const vd=vdot(distM,sec), z=zonesFor(vd);
+  $('pc-vdot').innerHTML = `VDOT <b class="mono" style="color:var(--gold)">${vd.toFixed(1)}</b> · goal sub-3:45 needs ${GOAL_VD.toFixed(1)} · stretch sub-3:30 needs ${STRETCH_VD.toFixed(1)}`;
+  const Z=[
+    ['Easy','Z2 · HR 110–130','Most of your running. Long runs, recovery runs. Conversational. If HR goes over 130, slow down.',`${pace(z.easy[0])}–${pace(z.easy[1])}`,'var(--good)'],
+    ['Steady','Low Z3 · HR 130–142','Controlled aerobic work. The end of some long runs, and cutback-week steady runs.',`${pace(z.steady[0])}–${pace(z.steady[1])}`,'var(--swim)'],
+    ['Marathon Pace','Z3 · HR ~142–152','Race rhythm. Long-run MP blocks and midweek MP runs. Should feel controlled.',`${pace(z.mp[0])}–${pace(z.mp[1])}`,'var(--mp)'],
+    ['Threshold','Z4 · HR 152–165','Comfortably hard: about the pace you could hold for an hour. Cruise intervals of 8–15 min or 2–3 km reps.',`${pace(z.thr[0])}–${pace(z.thr[1])}`,'var(--terra)'],
+    ['Interval','Z5 · HR 165+','VO₂ max work in 3–5 min reps or 800 m–1 km. Hard but even across all reps.',`${pace(z.int[0])}–${pace(z.int[1])}`,'var(--danger)'],
+    ['Strides / Reps','—','20 s strides, 200–400 m reps. Fast and relaxed with good form. Full recovery.',`~${pace(z.rep)}`,'var(--sleep)']
+  ];
+  $('zones').innerHTML = Z.map(([n,hr,d,p,c])=>`<div class="zone" style="--zc:${c}"><div class="zn">${n}<small>${hr}</small></div><div class="zd">${d}</div><div class="zp">${p}<small>min/km</small></div></div>`).join('');
+  $('pc-eq').innerHTML = [[5000,'5K'],[10000,'10K'],[21097.5,'Half'],[42195,'Marathon']].map(([d,l])=>{ const t=predict(vd,d);
+    return `<div class="eq"><div class="d">${l}</div><div class="t" style="color:${d===42195?'var(--terra)':'var(--text)'}">${fmt(t)}</div><div class="p">${pace(t/(d/1000))}/km</div></div>`; }).join('');
+}
+function runCalc(){ const d=+$('pc-dist').value, s=parseTime($('pc-time').value); if(!isNaN(s)&&s>0) renderPaces(d,s); }
+$('pc-go').addEventListener('click',runCalc);
+$('pc-time').addEventListener('keydown',e=>{ if(e.key==='Enter') runCalc(); });
+document.querySelectorAll('[data-preset]').forEach(b=>b.addEventListener('click',()=>{ const [d,t]=b.dataset.preset.split('|'); $('pc-dist').value=d; $('pc-time').value=t; runCalc(); }));
+
+function cfStatus(){ const cf=currentFitness();
+  $('cf-status').innerHTML = cf ? `Saved: <b>${fmt(cf.sec)}</b> for ${({5000:'5K',10000:'10K',21097.5:'Half Marathon',42195:'Marathon'})[cf.dist]} · VDOT ${cf.vd.toFixed(1)} (marathon equivalent ${fmt(predict(cf.vd,42195))}). Plan paces now progress from here to goal by W18. Saved in this browser only.`
+                               : 'No current fitness saved, so the plan shows goal paces (sub-3:45) for every week. Run the W4 parkrun and enter it here.'; }
+$('cf-save').addEventListener('click',()=>{ const s=parseTime($('cf-time').value); if(isNaN(s)||s<=0) return; store.set('rome.current',{dist:+$('cf-dist').value,sec:s}); cfStatus(); renderWeeks(); });
+$('cf-clear').addEventListener('click',()=>{ store.del('rome.current'); cfStatus(); renderWeeks(); });
+cfStatus(); runCalc();
+
+/* ---------- Predictor tab ---------- */
+function predictOut(){
+  const d=+$('pr-dist').value, s=parseTime($('pr-time').value); if(isNaN(s)||s<=0) return;
+  const vd=vdot(d,s), raw=predict(vd,42195);
+  const recent=LOG.slice(-6); const lr=recent.length?Math.max(...recent.map(w=>w.longRun||0)):0;
+  const vol=recent.length?recent.slice(-4).reduce((a,w)=>a+(w.runKm||0),0)/Math.min(4,recent.length):0;
+  let pen = 0.03; if(lr<30) pen+=0.02; if(lr<26) pen+=0.02; if(vol<45) pen+=0.02;
+  const lo=raw*(1+pen-0.02), hi=raw*(1+pen+0.02);
+  const vs = t=> t<=RACE.primary ? `<span style="color:var(--good)">${fmt(RACE.primary-t)} under</span>` : `<span style="color:var(--terra)">${fmt(t-RACE.primary)} over</span>`;
+  $('pr-out').innerHTML = `<div class="grid g3">
+    <div class="eq"><div class="d">VDOT equivalent</div><div class="t">${fmt(raw)}</div><div class="p">VDOT ${vd.toFixed(1)} · ${pace(raw/42.195)}/km</div></div>
+    <div class="eq" style="border-color:rgba(226,103,58,0.4)"><div class="d">Realistic first marathon</div><div class="t" style="color:var(--terra)">${fmt(lo)} – ${fmt(hi)}</div><div class="p">+${Math.round(pen*100)}% allowance: ${lr?`longest ${lr} km, ~${Math.round(vol)} km/wk`:'no logged long runs yet'}</div></div>
+    <div class="eq"><div class="d">vs sub-3:45</div><div class="t" style="font-size:20px">${vs((lo+hi)/2)}</div><div class="p">mid-point of realistic range</div></div></div>`;
+}
+$('pr-go').addEventListener('click',predictOut);
+$('pr-time').addEventListener('keydown',e=>{ if(e.key==='Enter') predictOut(); });
+
+(function(){
+  const cps=[[4,'5K parkrun',5000],[8,'10K time trial',10000],[12,'New Year parkrun (optional)',5000],[18,'Half marathon tune-up',21097.5]];
+  $('checkpoints').innerHTML = cps.map(([w,n,d])=>{ const logged=LOG.find(l=>l.wk===w&&l.test);
+    const res = logged ? `<b style="color:${logged.test.sec<=predict(GOAL_VD,d)?'var(--good)':'var(--terra)'}">${fmt(logged.test.sec)}</b>` : '<span style="color:var(--text-3)">—</span>';
+    return `<tr><td class="m">W${w}</td><td style="color:var(--text)">${n}</td><td class="hl">≤ ${fmt(predict(GOAL_VD,d))}</td><td class="hl" style="color:var(--gold)">≤ ${fmt(predict(STRETCH_VD,d))}</td><td>${res}</td></tr>`; }).join('');
+})();
+
+/* ---------- Charts ---------- */
+Chart.defaults.color='#a39b90'; Chart.defaults.borderColor='rgba(255,255,255,0.05)'; Chart.defaults.font.family="'Outfit',sans-serif"; Chart.defaults.font.size=12;
+const C={terra:'#e2673a',gold:'#e8b14a',zwift:'#3a8ff0',swim:'#3af0c7',good:'#00e676',sleep:'#8f7cf0',mp:'#f08a5d',muted:'rgba(255,255,255,0.12)'};
+const WK=PLAN.map((_,i)=>'W'+(i+1));
+const byWk = key => WK.map((_,i)=>{ const l=LOG.find(x=>x.wk===i+1); return l&&l[key]!=null?l[key]:null; });
+const legend={labels:{boxWidth:12,padding:14}};
+const noGrid={grid:{display:false}};
+
+new Chart($('planChart'),{data:{labels:WK,datasets:[
+  {type:'bar',label:'Run km',data:PLAN.map(p=>p.km),backgroundColor:PLAN.map((p,i)=>i+1===CW?C.terra:phaseOf(i+1).col+'99'),borderRadius:4,order:2},
+  {type:'line',label:'Long run km',data:PLAN.map(p=>p.lr),borderColor:C.gold,backgroundColor:C.gold,tension:.3,pointRadius:3,borderWidth:2,order:1}
+]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend},scales:{x:noGrid,y:{beginAtZero:true,title:{display:true,text:'km',color:'#6b645b'}}}}});
+
+new Chart($('volChart'),{data:{labels:WK,datasets:[
+  {type:'bar',label:'Planned',data:PLAN_KM,backgroundColor:C.muted,borderRadius:4,order:2},
+  {type:'line',label:'Actual',data:byWk('runKm'),borderColor:C.terra,backgroundColor:C.terra,pointRadius:5,borderWidth:2,tension:.3,spanGaps:false,order:1}
+]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend},scales:{x:noGrid,y:{beginAtZero:true}}}});
+
+new Chart($('lrChart'),{type:'line',data:{labels:WK,datasets:[
+  {label:'Planned',data:PLAN.map(p=>p.race?null:p.lr),borderColor:C.muted,borderDash:[5,5],pointRadius:0,borderWidth:2},
+  {label:'Actual',data:byWk('longRun'),borderColor:C.gold,backgroundColor:C.gold,pointRadius:5,borderWidth:2,tension:.3}
+]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend},scales:{x:noGrid,y:{beginAtZero:true,suggestedMax:34}}}});
+
+new Chart($('xtChart'),{type:'bar',data:{labels:WK,datasets:[
+  {label:'Zwift',data:byWk('zwiftMin').map(v=>v==null?null:+(v/60).toFixed(2)),backgroundColor:C.zwift,borderRadius:3,stack:'s'},
+  {label:'Swim (est. hrs)',data:byWk('swimM').map(v=>v==null?null:+(v/2500).toFixed(2)),backgroundColor:C.swim,borderRadius:3,stack:'s'}
+]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend},scales:{x:{stacked:true,grid:{display:false}},y:{stacked:true,beginAtZero:true}}}});
+
+new Chart($('rdChart'),{type:'line',data:{labels:WK,datasets:[
+  {label:'Readiness',data:WK.map((_,i)=>{ const sl=LOG.filter(l=>l.wk<=i+1); return LOG.some(l=>l.wk===i+1)?readiness(sl).total:null; }),borderColor:C.terra,backgroundColor:'rgba(226,103,58,0.12)',fill:true,pointRadius:5,borderWidth:2,tension:.3}
+]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:noGrid,y:{min:0,max:100}}}});
+
+new Chart($('slChart'),{type:'line',data:{labels:WK,datasets:[
+  {label:'Sleep score',data:byWk('sleep'),borderColor:C.sleep,backgroundColor:C.sleep,pointRadius:5,borderWidth:2,tension:.3},
+  {label:'Good (80)',data:WK.map(()=>80),borderColor:'rgba(143,124,240,0.35)',borderDash:[5,5],pointRadius:0,borderWidth:1}
+]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend},scales:{x:noGrid,y:{min:55,max:95}}}});
+
+const gLabels=[...HISTORY.garminMarathon.map(g=>g.label),...LOG.filter(l=>l.garminMara).map(l=>'W'+l.wk)];
+const gData=[...HISTORY.garminMarathon.map(g=>g.sec),...LOG.filter(l=>l.garminMara).map(l=>l.garminMara)];
+new Chart($('garminChart'),{type:'line',data:{labels:gLabels,datasets:[
+  {label:'Garmin marathon prediction',data:gData,borderColor:C.good,backgroundColor:C.good,pointRadius:6,borderWidth:2,tension:.3},
+  {label:'Sub-3:45',data:gLabels.map(()=>RACE.primary),borderColor:C.terra,borderDash:[6,4],pointRadius:0,borderWidth:1.5},
+  {label:'Sub-3:30',data:gLabels.map(()=>RACE.stretch),borderColor:C.gold,borderDash:[6,4],pointRadius:0,borderWidth:1.5}
+]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend,tooltip:{callbacks:{label:c=>`${c.dataset.label}: ${fmt(c.raw)}`}}},
+  scales:{x:noGrid,y:{reverse:true,suggestedMin:3*3600+5*60,suggestedMax:3*3600+55*60,ticks:{callback:v=>fmt(v)}}}}});
+
+/* ---------- Log tab ---------- */
+(function(){
+  if(!LOG.length){
+    $('log-empty').innerHTML = `<div class="empty">No weeks logged yet. After Week 1 (ends Sun 18 Oct), drop your <b>Garmin Activities CSV</b>, <b>Sleep CSV</b> and a <b>Training Status screenshot</b> into the Rome Marathon folder, and the charts below will fill in.</div>`;
+    $('log-table').innerHTML = `<tr><td colspan="12" style="text-align:center;color:var(--text-3)">Awaiting first upload</td></tr>`;
+    return;
+  }
+  const tot=k=>LOG.reduce((a,w)=>a+(w[k]||0),0);
+  $('log-stats').innerHTML = [
+    ['Run km (block)',tot('runKm').toFixed(0),`${LOG.length} weeks logged`,'var(--terra)'],
+    ['Zwift hours',(tot('zwiftMin')/60).toFixed(1),`${tot('zwiftKm').toFixed(0)} km ridden`,'var(--zwift)'],
+    ['Swim',(tot('swimM')/1000).toFixed(1)+'<small> km</small>','recovery & technique','var(--swim)'],
+    ['MP km',tot('mpKm').toFixed(0),'marathon-pace running','var(--mp)']
+  ].map(([l,v,s,c])=>`<div class="card"><div class="stat-label">${l}</div><div class="stat-value" style="color:${c}">${v}</div><div class="stat-sub">${s}</div></div>`).join('');
+  $('log-table').innerHTML = LOG.slice().reverse().map(w=>{ const s=weekStart(w.wk);
+    return `<tr><td class="m">W${w.wk}</td><td>${dShort(s)}</td><td class="hl" style="color:var(--terra)">${w.runKm??'—'}</td><td class="m">${PLAN_KM[w.wk-1]}</td><td class="m">${w.runs??'—'}</td><td class="hl">${w.longRun??'—'}</td><td class="m">${w.mpKm??0}</td>
+      <td class="m">${w.zwiftMin?Math.round(w.zwiftMin)+' min':'—'}</td><td class="m">${w.swimM?w.swimM+' m':'—'}</td><td class="m">${w.sleep??'—'}</td><td class="m">${w.vo2??'—'}</td><td style="white-space:normal;min-width:180px">${w.notes||''}</td></tr>`; }).join('');
+})();
+
+/* ---------- Race tab ---------- */
+const COURSE_NOTES = {5:'Settle in. Crowded, early cobbles', 10:'Should feel too easy. Good', 15:'Food + electrolytes', 20:'Lungotevere: flat and fast', 21.1:'Halfway: check split vs plan', 25:'Vatican side, more cobbles', 30:'The real race starts here', 35:'Late rises. Effort, not pace', 40:'Cobbles to the finish. Empty the tank', 42.195:'🏅 Fori Imperiali finish'};
+function renderSplits(goal){
+  const gp=goal/42.195;
+  const sections=[[5,8],[10,5],[15,0],[20,0],[21.1,0],[25,0],[30,0],[35,0],[40,0],[42.195,null]];
+  // offsets (s/km) for early sections; the rest at a pace that balances to goal
+  let prev=0, early=0; sections.forEach(([k,o])=>{ if(o) early+=(k-prev)*o; prev=k; });
+  const remDist=42.195-10, adj=gp-early/remDist;
+  let clock=0; prev=0;
+  $('splits').innerHTML = sections.map(([k,o])=>{ const p = o!=null && o>0 ? gp+o : adj; clock+=(k-prev)*p; prev=k;
+    return `<tr><td class="hl">${k===42.195?'Finish':k===21.1?'Half':k+' km'}</td><td class="m">${pace(p)}/km</td><td class="hl" style="color:var(--gold)">${fmt(clock)}</td><td>${COURSE_NOTES[k]}</td></tr>`; }).join('');
+  document.querySelectorAll('[data-split]').forEach(b=>b.classList.toggle('ghost',+b.dataset.split!==goal));
+}
+document.querySelectorAll('[data-split]').forEach(b=>b.addEventListener('click',()=>renderSplits(+b.dataset.split)));
+renderSplits(RACE.primary);
+
+(function(){
+  const gp=RACE.primary/42.195;
+  const pts=[['−15 min','Gel #1 + sips of water (in the corral)'],[7.3,'Gel #2 → water at 7.3'],[13.4,'Gel #3 → water at 13.4'],[17.7,'Gel #4 → water at 17.7'],[22.3,'Gel #5 → water at 22.3'],[28.6,'Gel #6 → water at 28.6'],[32.3,'Gel #7 → water at 32.3'],[37.3,'Gel #8 (optional; caffeine) → water at 37.3'],['Every station','Sip water; take electrolytes at 5, 15, 25, 35 km']];
+  $('fuel-table').innerHTML = pts.map(([k,w])=>`<tr><td class="hl">${typeof k==='number'?`${k} km <span style="color:var(--text-3);font-weight:400">(~${fmt(k*gp)})</span>`:k}</td><td style="white-space:normal">${w}</td></tr>`).join('');
+})();
+
+function carbs(){ const w=+$('bw').value; if(!w||w<40||w>140) return; store.set('rome.bw',w);
+  $('carb-out').innerHTML = `<div class="goal-row"><span>Fri 12 &amp; Sat 13 Mar (each day)</span><span>${Math.round(w*8)}–${Math.round(w*10)} g carbs</span></div>
+    <div class="goal-row"><span>Race breakfast (3 h before)</span><span>${Math.round(w*2)}–${Math.round(w*3)} g carbs</span></div>
+    <div class="goal-row"><span>In-race (per hour)</span><span>60–80 g</span></div>
+    <div class="note">8–10 g/kg/day for the 36–48 h before the race. Choose low-fibre foods: white pasta and rice, bread, bagels, juice, rice pudding, sweets. Practise one "mini carb-load" before the W19 32 km run. Expect to gain 1–2 kg of water weight; that's normal.</div>`; }
+$('bw-go').addEventListener('click',carbs);
+(function(){ const w=store.get('rome.bw'); if(w){ $('bw').value=w; carbs(); } else { $('carb-out').innerHTML='<div class="note">Enter your weight for personalised targets.</div>'; } })();
+
+(function(){ const t=store.get('rome.tab'); const b=t&&document.querySelector(`.tab-btn[data-tab="${t}"]`); if(b) b.click(); })();
+$('last-updated').textContent = new Date(LAST_UPDATED).toLocaleDateString('en-GB',{day:'numeric',month:'long',year:'numeric'}) + ` · Week ${CW}`;
+</script>
+</body>
+</html>

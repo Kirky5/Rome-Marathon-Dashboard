@@ -14,30 +14,32 @@ A training dashboard for my **first marathon**: **Run Rome The Marathon**, **Sun
 
 ## 📍 Current Status
 
-- **Week:** 1 of 22 (12–18 Oct 2026)
+- **Week:** 2 of 22 (19–25 Oct 2026)
 - **Phase:** 1, Rebuild
-- **Overall readiness:** **30%** vs sub-3:45 (Week 0 baseline, 14 Sep – 11 Oct)
-- **Weeks to race day:** 22
+- **Overall readiness:** **58%** vs sub-3:45 (up from 30% at baseline)
+- **Weeks to race day:** 21
 
 ### Readiness breakdown (vs sub-3:45)
-| Factor | Weight | Score | Baseline |
+| Factor | Weight | Score | Latest |
 |---|---|---|---|
-| Long run (vs 32 km) | 30% | 31% | Longest in last 4 wks: 10.0 km |
-| Weekly volume (vs 55 km peak) | 20% | 31% | 4-wk avg 17.1 km (last week 28.2 km) |
-| Marathon-pace work | 15% | 0% | Not started yet |
-| Aerobic engine | 15% | 78% | 10 km in 48:01 (10 Oct) → VDOT 42.0, 3:40 equivalent |
-| Fuelling practice | 10% | 0% | Starts W7/W10 |
-| Consistency | 10% | — | Scores from Week 1 |
+| Long run (vs 32 km) | 30% | 94% | 30.0 km on 18 Oct (6:05/km, HR 146) |
+| Weekly volume (vs 55 km peak) | 20% | 56% | W1 44.1 km (plan 30) |
+| Marathon-pace work | 15% | 0% | Starts W14 |
+| Aerobic engine | 15% | 78% | 10 km in 48:01 → 3:40 equivalent |
+| Fuelling practice | 10% | 0% | No fuelled long runs logged yet |
+| Consistency | 10% | 68% | 47% over planned km (overshoot penalised) |
 
 ### 🏆 Latest achievements
-- Geordieman 70.3 completed (23 Aug 2026)
-- 10 km in 48:01 (4:48/km) on 10 Oct: speed is already at sub-3:45 level
-- Back up to 28 km of running in the week before the block started
+- **30 km long run** with run club on 18 Oct: longest run ever, beating the 25 km from Feb 2025
+- Zwift back on track: 60 min Z2 group ride at an average HR of 123
+- Easy run pace/HR improving: 8 km at 5:43/km, HR 137
 
-### 🎯 This week's priorities
-1. About 30 km over 3–4 runs, with a 14 km long run, all genuinely easy (**HR <130**)
-2. Get Zwift going again: 2 × 60 min Z2, plus one easy technique swim
-3. Cut HIIT back to 1–2 sessions so the runs come first
+### 🎯 This week's priorities (Week 2)
+1. **Recover from the 30 km.** Mon–Wed very easy: Zwift spin, swim, a short easy run
+2. Fartlek (8 × 1 min) on Thursday only if your legs feel normal. Sunday long run 15 km, HR <135
+3. Keep HIIT to one session and get the first swim of the block in
+
+*Last updated: 18 October 2026*
 
 ## 🗓️ Phases
 
@@ -66,4 +68,3 @@ A training dashboard for my **first marathon**: **Run Rome The Marathon**, **Sun
 2. Claude appends the week to the `LOG` array in `index.html` and refreshes this README
 3. Upload both files to this repo, and GitHub Pages updates automatically
 
-*Last updated: 12 October 2026*

@@ -521,7 +521,7 @@
 /* =====================================================================
    DATA — this is the only block that changes in weekly updates.
    ===================================================================== */
-const LAST_UPDATED = '2026-10-12';
+const LAST_UPDATED = '2026-10-18';
 const RACE = { date:'2027-03-14T08:10:00+01:00', primary:3*3600+45*60, stretch:3*3600+30*60 };
 const BLOCK_START = '2026-10-12'; // Monday of Week 1
 
@@ -550,6 +550,8 @@ const LOG = [
   { wk:0, baseline:true, runKm:17.1, runs:2, longRun:10.0, mpKm:0, fuelled:false, zwiftMin:9, zwiftKm:4, swimM:85, strength:2.5,
     test:{name:'10 km effort, 10 Oct (48:01, avg HR 158)', dist:10010, sec:2881},
     notes:'Baseline. Last week 28.2 km over 3 runs; 4-wk avg 17.1 km incl. Rhodes holiday week. Longest run since Geordieman 10.0 km. 10 HIIT sessions in 4 wks. Easy runs at HR 139–151 (Z3).' },
+  { wk:1, runKm:44.1, runs:3, longRun:30.0, mpKm:0, fuelled:true, zwiftMin:60, zwiftKm:30.5, swimM:0, strength:2,
+    notes:'30 km social long run with run club (6:05/km, HR 146, TE 4.8): planned 14 km. Fuelled: 3 gels (same as 70.3) + Lucozade Sport at 20 km. Track reps Fri. Easy run 8 km @ 5:43, HR 137. Zwift Z2 group ride 60 min (HR 123). 2 × HIIT. No swim.' },
   // e.g. { wk:1, runKm:31.2, runs:4, longRun:14.1, mpKm:0, fuelled:false, zwiftMin:125, zwiftKm:60, swimM:1600, strength:1, sleep:81, sleepHrs:7.9, vo2:54, garminMara:12300, notes:'Re-entry week' },
 ];
 
@@ -572,7 +574,7 @@ const PHASES = [
 // km = planned run km; lr = long run km; lrNote; key = quality session; cut = cutback week
 const PLAN = [
   {km:30, lr:14, key:'Easy 8 km + 6 × 20 s strides', note:'Re-entry week. Everything easy and conversational. The goal is to re-establish the habit, not to prove fitness.'},
-  {km:33, lr:15, key:'Fartlek: 8 × 1 min brisk / 1 min jog', note:'First taste of faster running. "Brisk" is around 10K effort, not flat out.'},
+  {km:33, lr:15, key:'Fartlek: 8 × 1 min brisk / 1 min jog (Thu, only if legs are fresh)', note:'Recovery week after your 30 km. Keep Mon–Wed very easy (Zwift spin, swim, short easy run). Do the fartlek only if your legs feel normal by Thursday. Sunday\'s 15 km is genuinely easy, HR <135. One HIIT session max.'},
   {km:36, lr:16, key:'3 × 8 min @ Threshold (2 min jog)', note:'Threshold should feel comfortably hard. You could say a short sentence, but you wouldn\'t want to.'},
   {km:28, lr:12, key:'5K test: parkrun, all out', cut:true, test:'5K', note:'Cutback week. Enter your parkrun time in Pace Zones → "Set current fitness". It calibrates every pace in the plan.'},
   {km:38, lr:18, key:'4 × 8 min @ Threshold (90 s jog)', note:'First 18 km long run since Geordieman. Keep HR under 135 for the whole run.'},
@@ -666,7 +668,8 @@ function readiness(log){
   const mp6 = last(6).reduce((a,w)=>a+(w.mpKm||0),0);
   const fuelled = log.filter(w=>w.fuelled).length;
   const planned = log.filter(w=>w.wk>0);
-  const cons = planned.length ? planned.reduce((a,w)=>a+clamp((w.runKm||0)/PLAN_KM[w.wk-1],0,1.1),0)/planned.length : null;
+  const adh = r => r<=1 ? r : r<=1.15 ? 1 : Math.max(0, 1-(r-1.15));   // big overshoots count against adherence
+  const cons = planned.length ? planned.reduce((a,w)=>a+adh((w.runKm||0)/PLAN_KM[w.wk-1]),0)/planned.length : null;
   const preds = log.filter(w=>w.garminMara).map(w=>w.garminMara);
   const tests = log.filter(w=>w.test&&w.test.dist&&w.test.sec);
   let engineSec = null, engineSrc='';
@@ -679,7 +682,7 @@ function readiness(log){
     {k:'Marathon-pace work', w:15, v:clamp(mp6/30*100,0,100), d:`${mp6.toFixed(1)} km at MP in last 6 wks / 30 km`, c:'var(--mp)'},
     {k:'Aerobic engine', w:15, v:engine, d: engine==null?'Awaiting a test result or Garmin prediction':`Projected ${fmt(engineSec)} via ${engineSrc}`, c:'var(--good)'},
     {k:'Fuelling practice', w:10, v:clamp(fuelled/6*100,0,100), d:`${fuelled} fuelled long runs / 6`, c:'var(--warn)'},
-    {k:'Consistency', w:10, v:cons==null?null:clamp(cons*100,0,100), d:cons==null?'Starts scoring from Week 1':`${Math.round(cons*100)}% of planned run km completed`, c:'var(--zwift)'}
+    {k:'Consistency', w:10, v:cons==null?null:clamp(cons*100,0,100), d:cons==null?'Starts scoring from Week 1':`${Math.round(cons*100)}% adherence to planned run km (more than 15% over plan counts against it)`, c:'var(--zwift)'}
   ];
   const measured = f.filter(x=>x.v!=null);
   const total = measured.reduce((a,x)=>a+x.v*x.w,0)/measured.reduce((a,x)=>a+x.w,0);
@@ -931,7 +934,7 @@ new Chart($('garminChart'),{type:'line',data:{labels:gLabels,datasets:[
   }
   const tot=k=>BL.reduce((a,w)=>a+(w[k]||0),0);
   $('log-stats').innerHTML = [
-    ['Run km (block)',tot('runKm').toFixed(0),`${BL.length} weeks logged`,'var(--terra)'],
+    ['Run km (block)',tot('runKm').toFixed(0),`${BL.length} week${BL.length===1?'':'s'} logged`,'var(--terra)'],
     ['Zwift hours',(tot('zwiftMin')/60).toFixed(1),`${tot('zwiftKm').toFixed(0)} km ridden`,'var(--zwift)'],
     ['Swim',(tot('swimM')/1000).toFixed(1)+'<small> km</small>','recovery & technique','var(--swim)'],
     ['MP km',tot('mpKm').toFixed(0),'marathon-pace running','var(--mp)']
